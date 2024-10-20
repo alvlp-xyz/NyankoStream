@@ -1,7 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.NyankoStream" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+    <!-- Base application theme for dark mode -->
+    <style name="Base.Theme.NyankoStream" parent="Theme.Material3.DayNight">
+        <!-- Customize your dark theme here -->
+        <item name="colorPrimary">@color/dark_blue</item>
+        <item name="colorOnPrimary">#FFFFFF</item> <!-- White text on primary -->
+        <item name="colorSecondary">@color/light_blue</item>
+        <item name="colorOnSecondary">#FFFFFF</item> <!-- White text on secondary -->
+        <item name="android:background">#121212</item> <!-- Dark background -->
+        <item name="colorOnBackground">#FFFFFF</item> <!-- White text on background -->
     </style>
 </resources>

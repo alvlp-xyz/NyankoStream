@@ -1,9 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.NyankoStream" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <item name="colorPrimary">@color/white</item>
+    <!-- Base application theme for light mode -->
+    <style name="Base.Theme.NyankoStream" parent="Theme.Material3.DayNight">
+        <!-- Customize your light theme here -->
+        <item name="colorPrimary">@color/light_blue</item>
+        <item name="colorOnPrimary">#FFFFFF</item> <!-- White text on primary -->
+        <item name="colorSecondary">@color/light_blue</item>
+        <item name="colorOnSecondary">#FFFFFF</item> <!-- White text on secondary -->
+        <item name="android:background">#FFFFFF</item> <!-- White background -->
+        <item name="colorOnBackground">#000000</item> <!-- Black text on background -->
     </style>
-
-    <style name="Theme.NyankoStream" parent="Base.Theme.NyankoStream" />
 </resources>

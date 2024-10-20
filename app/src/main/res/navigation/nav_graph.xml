@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    app:startDestination="@id/nav_home">
+
+    <fragment
+        android:id="@+id/nav_home"
+        android:name="com.nyankostream.ui.HomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_home" />
+
+    <fragment
+        android:id="@+id/nav_tab1"
+        android:name="com.nyankostream.ui.Tab1Fragment"
+        android:label="Tab1"
+        tools:layout="@layout/fragment_tab1" />
+
+    <fragment
+        android:id="@+id/nav_tab2"
+        android:name="com.nyankostream.ui.Tab2Fragment"
+        android:label="Tab2"
+        tools:layout="@layout/fragment_tab2" />
+</navigation>

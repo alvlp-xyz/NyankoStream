@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="light_blue">#B700A5DC</color> <!-- Light Blue -->
+    <color name="dark_blue">#0087C5</color> <!-- Dark Blue for dark theme -->
 </resources>
