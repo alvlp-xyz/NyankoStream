@@ -1,0 +1,8 @@
+<resources>
+    <color name="light_blue">#B700A5DC</color> <!-- Light Blue -->
+    <color name="dark_blue">#0087C5</color> <!-- Dark Blue for dark theme -->
+    <color name="enabled_button_color">#B700A5DC</color>  <!-- Example enabled color -->
+    <color name="enabled_text_color">#FFFFFF</color>   <!-- Example enabled text color -->
+    <color name="disabled_button_color">#BDBDBD</color> <!-- Example disabled color -->
+    <color name="disabled_text_color">#757575</color>
+</resources>
