@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Spinner for selecting the resolution -->
+    <Spinner
+        android:id="@+id/resolutionSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Spinner for selecting the provider -->
+    <Spinner
+        android:id="@+id/providerSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp" />
+
+    <!-- TextView for displaying the file size -->
+    <TextView
+        android:id="@+id/fileSizeTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="File Size: " />
+
+    <!-- Download Button -->
+    <Button
+        android:id="@+id/downloadButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Download" />
+
+</LinearLayout>

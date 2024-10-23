@@ -101,14 +101,19 @@ public class SearchFragment extends Fragment {
 
                         for (int i = 0; i < dataArray.length(); i++) {
                             JSONObject animeObject = dataArray.getJSONObject(i);
+
+                            // Create Anime object without genres
                             Anime anime = new Anime(
                                     animeObject.getString("title"),
                                     animeObject.getString("slug"),
                                     animeObject.getString("poster"),
-                                    null, // No current_episode for search results
-                                    null, // No release_day for search results
-                                    null  // No newest_release_date for search results
+                                    animeObject.optString("current_episode", null), // Safely get current_episode
+                                    animeObject.optString("release_day", null),
+                                    animeObject.optString("newest_release_date", null),
+                                    animeObject.optString("status", null), // Extract status
+                                    animeObject.optString("rating", null)  // Extract rating
                             );
+
                             animeList.add(anime);
                         }
 
@@ -124,4 +129,5 @@ public class SearchFragment extends Fragment {
             }
         });
     }
+
 }

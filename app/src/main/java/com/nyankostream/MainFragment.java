@@ -100,12 +100,15 @@ public class MainFragment extends Fragment {
                                     animeObject.getString("title"),
                                     animeObject.getString("slug"),
                                     animeObject.getString("poster"),
-                                    animeObject.getString("current_episode"),
-                                    animeObject.getString("release_day"),
-                                    animeObject.getString("newest_release_date")
+                                    animeObject.optString("current_episode", null), // Use optString to avoid exceptions if the field is missing
+                                    animeObject.optString("release_day", null),
+                                    animeObject.optString("newest_release_date", null),
+                                    animeObject.optString("status", null), // Extract status
+                                    animeObject.optString("rating", null)  // Extract rating
                             );
                             newAnimes.add(anime);
                         }
+
 
                         if (getActivity() != null) {
                             getActivity().runOnUiThread(() -> {

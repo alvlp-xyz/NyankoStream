@@ -44,6 +44,8 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.navigation.fragment.ktx)
     implementation(libs.navigation.ui.ktx)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
@@ -54,6 +56,8 @@ dependencies {
     annotationProcessor("com.github.bumptech.glide:compiler:4.12.0")
     implementation("com.google.code.gson:gson:2.8.9")
     implementation("com.squareup.picasso:picasso:2.8")
-
+    implementation("androidx.media3:media3-exoplayer:1.4.1")
+    implementation("androidx.media3:media3-exoplayer-dash:1.4.1")
+    implementation("androidx.media3:media3-ui:1.4.1")
 
 }

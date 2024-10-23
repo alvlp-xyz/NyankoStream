@@ -4,11 +4,13 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.ImageView;
-import android.widget.LinearLayout; // Ensure to import LinearLayout
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.Button;
+import android.app.AlertDialog;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -37,20 +39,22 @@ public class AnimeDetailActivity extends AppCompatActivity {
     private ImageView posterImageView;
     private TextView titleTextView, japaneseTitleTextView, ratingTextView, producerTextView, typeTextView, statusTextView,
             episodeCountTextView, durationTextView, releaseDateTextView, studioTextView, genresTextView, synopsisTextView;
-    private LinearLayout episodeListContainer; // Container to hold episode views
-    private String animeSlug; // Declare animeSlug here
+    private LinearLayout episodeListContainer;
+    private String animeSlug;
+    private Button batchDownloadButton;
+    private String batchSlug;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_anime_detail); // Ensure this matches your XML file name
+        setContentView(R.layout.activity_anime_detail);
 
         // Initialize Views
         posterImageView = findViewById(R.id.posterImageView);
         titleTextView = findViewById(R.id.titleTextView);
         japaneseTitleTextView = findViewById(R.id.japaneseTitleTextView);
         ratingTextView = findViewById(R.id.ratingTextView);
-        producerTextView = findViewById(R.id.produserTextView); // Ensure correct ID
+        producerTextView = findViewById(R.id.produserTextView);
         typeTextView = findViewById(R.id.typeTextView);
         statusTextView = findViewById(R.id.statusTextView);
         episodeCountTextView = findViewById(R.id.episodeCountTextView);
@@ -59,12 +63,20 @@ public class AnimeDetailActivity extends AppCompatActivity {
         studioTextView = findViewById(R.id.studioTextView);
         genresTextView = findViewById(R.id.genresTextView);
         synopsisTextView = findViewById(R.id.synopsisTextView);
-        episodeListContainer = findViewById(R.id.episodeListContainer); // Initialize the episode list container
+        episodeListContainer = findViewById(R.id.episodeListContainer);
+
+        // Initialize batch download button
+        batchDownloadButton = findViewById(R.id.batchDownloadButton);
+        batchDownloadButton.setVisibility(View.GONE); // Initially hide the button
+
+        // Set listener to show download dialog
+        batchDownloadButton.setOnClickListener(v -> showBatchDownloadDialog(batchSlug));
 
         // Get the slug from the Intent
         Intent intent = getIntent();
         String slug = intent.getStringExtra("slug");
-        animeSlug = intent.getStringExtra("anime_slug"); // Initialize animeSlug
+        animeSlug = intent.getStringExtra("anime_slug");
+
         // Fetch anime details using the slug
         fetchAnimeDetails(slug);
     }
@@ -90,6 +102,14 @@ public class AnimeDetailActivity extends AppCompatActivity {
 
                         runOnUiThread(() -> {
                             try {
+                                JSONObject batch = data.optJSONObject("batch");
+                                if (batch != null) {
+                                    batchSlug = batch.optString("slug", null);
+                                    if (batchSlug != null) {
+                                        batchDownloadButton.setVisibility(View.VISIBLE); // Show button when batch slug is available
+                                    }
+                                }
+
                                 // Set values to views
                                 titleTextView.setText(data.optString("title", "N/A"));
                                 japaneseTitleTextView.setText(data.optString("japanese_title", "N/A"));
@@ -108,8 +128,7 @@ public class AnimeDetailActivity extends AppCompatActivity {
                                         .load(data.optString("poster", ""))
                                         .into(posterImageView);
 
-                                // After setting the anime details, fetch the episode list
-                                fetchEpisodeList(slug);
+                                fetchEpisodeList(slug); // Fetch the episodes
                             } catch (JSONException e) {
                                 e.printStackTrace();
                                 Toast.makeText(AnimeDetailActivity.this, "Error parsing anime details", Toast.LENGTH_SHORT).show();
@@ -123,6 +142,90 @@ public class AnimeDetailActivity extends AppCompatActivity {
         });
     }
 
+    private void showBatchDownloadDialog(String batchSlug) {
+        if (batchSlug == null || batchSlug.isEmpty()) {
+            Toast.makeText(this, "No batch download available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        OkHttpClient client = new OkHttpClient();
+        String url = "http://maverick.caligo.asia:9044/v2/otakudesu/batch/" + batchSlug;
+
+        Request request = new Request.Builder().url(url).build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                runOnUiThread(() -> Toast.makeText(AnimeDetailActivity.this, "Failed to fetch batch download", Toast.LENGTH_SHORT).show());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    try {
+                        String jsonData = response.body().string();
+                        JSONObject jsonObject = new JSONObject(jsonData);
+                        JSONObject data = jsonObject.optJSONObject("data");
+
+                        runOnUiThread(() -> {
+                            try {
+                                JSONArray downloadUrls = data.optJSONArray("download_urls");
+
+                                AlertDialog.Builder builder = new AlertDialog.Builder(AnimeDetailActivity.this);
+                                builder.setTitle("Download Batch");
+
+                                // Create a message with available download options
+                                StringBuilder message = new StringBuilder();
+                                for (int i = 0; i < downloadUrls.length(); i++) {
+                                    JSONObject downloadOption = downloadUrls.getJSONObject(i);
+                                    String resolution = downloadOption.optString("resolution", "Unknown Resolution");
+                                    String fileSize = downloadOption.optString("file_size", "Unknown Size");
+
+                                    message.append("Resolution: ").append(resolution)
+                                            .append("\nSize: ").append(fileSize)
+                                            .append("\n\n");
+                                }
+
+                                builder.setMessage(message.toString());
+
+                                // Add download action
+                                builder.setPositiveButton("Download", (dialog, which) -> {
+                                    // Open the first URL as an example (you can add further customization here)
+                                    try {
+                                        JSONObject firstUrl = downloadUrls.getJSONObject(0).optJSONArray("urls").getJSONObject(0);
+                                        String downloadUrl = firstUrl.optString("url", "");
+                                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl));
+                                        startActivity(intent);
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+                                });
+
+                                builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+                                builder.show();
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                                Toast.makeText(AnimeDetailActivity.this, "Error parsing batch download data", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+    }
+
+    private String getGenres(JSONArray genresArray) throws JSONException {
+        StringBuilder genres = new StringBuilder();
+        for (int i = 0; i < genresArray.length(); i++) {
+            JSONObject genre = genresArray.getJSONObject(i);
+            genres.append(genre.getString("name"));
+            if (i < genresArray.length() - 1) {
+                genres.append(", ");
+            }
+        }
+        return genres.toString();
+    }
 
     private void fetchEpisodeList(String slug) {
         OkHttpClient client = new OkHttpClient();
@@ -209,32 +312,10 @@ public class AnimeDetailActivity extends AppCompatActivity {
             }
         });
     }
-
-// ... (your existing methods)
-
-
-    // Helper method to extract episode number from slug
-    private int extractEpisodeNumber(String slug) {
-        // Use regex to find the episode number in the slug
-        Pattern pattern = Pattern.compile("episode-(\\d+)");
-        Matcher matcher = pattern.matcher(slug);
-        if (matcher.find()) {
-            return Integer.parseInt(matcher.group(1)); // Return the episode number
-        }
-        return 0; // Default value if no number is found
-    }
-
-
-
-    private String getGenres(JSONArray genresArray) throws JSONException {
-        StringBuilder genres = new StringBuilder();
-        for (int i = 0; i < genresArray.length(); i++) {
-            JSONObject genre = genresArray.getJSONObject(i);
-            genres.append(genre.getString("name"));
-            if (i < genresArray.length() - 1) {
-                genres.append(", ");
-            }
-        }
-        return genres.toString();
-    }
 }
+
+
+
+
+
+

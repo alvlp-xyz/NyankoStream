@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -25,38 +24,31 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class DownloadActivity extends AppCompatActivity {
 
     private TextView episodeTitleTextView;
-    private TextView animeTitleTextView, downloadUrlsTextView;
-    private Button previousEpisodeButton, nextEpisodeButton;
     private LinearLayout resolutionContainer;
     private String episodeSlug;
-    private int episodeNumber;
+    private Button previousEpisodeButton, nextEpisodeButton;
 
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_download);
 
         // Initialize Views
         episodeTitleTextView = findViewById(R.id.episodeTitleTextView);
+        resolutionContainer = findViewById(R.id.resolutionContainer);
         previousEpisodeButton = findViewById(R.id.previousEpisodeButton);
         nextEpisodeButton = findViewById(R.id.nextEpisodeButton);
-        resolutionContainer = findViewById(R.id.resolutionContainer);
-        downloadUrlsTextView = findViewById(R.id.downloadUrlsTextView);
+
         Intent intent = getIntent();
         episodeSlug = intent.getStringExtra("episode_slug"); // Get the slug
         Log.d("DownloadActivity", "Episode Slug: " + episodeSlug);
 
-        // Fetch episode details using the episode slug
         fetchEpisodeDetails(episodeSlug);
-
     }
-
-
 
     private void fetchEpisodeDetails(String episodeSlug) {
         OkHttpClient client = new OkHttpClient();
@@ -78,167 +70,170 @@ public class DownloadActivity extends AppCompatActivity {
                     try {
                         String responseBody = response.body().string();
                         JSONObject jsonResponse = new JSONObject(responseBody);
-
-                        // Extract the 'download_urls' from the JSON response
                         JSONObject dataObject = jsonResponse.getJSONObject("data");
-                        JSONObject downloadUrls = dataObject.getJSONObject("download_urls"); // Make sure to reference this correctly
 
-                        // Now you can update the UI based on 'downloadUrls'
+                        // Get the episode title
+                        String episodeTitle = dataObject.getString("episode");
+
+                        // Check for next and previous episodes
+                        boolean hasNext = dataObject.getBoolean("has_next_episode");
+                        boolean hasPrevious = dataObject.getBoolean("has_previous_episode");
+                        String nextSlug = dataObject.optString("next_episode", null);
+                        JSONObject previousEpisode = dataObject.optJSONObject("previous_episode");
+
+                        // Update UI on the main thread
                         runOnUiThread(() -> {
-                            LinearLayout downloadContainer = findViewById(R.id.downloadContainer);
-                            downloadContainer.removeAllViews(); // Clear previous views if needed
+                            episodeTitleTextView.setText(episodeTitle); // Set episode title
 
-                            // Extract formats like mp4, mkv, etc.
-                            JSONArray keys = downloadUrls.names();
-                            if (keys != null) {
-                                for (int k = 0; k < keys.length(); k++) {
-                                    String format = keys.optString(k);
-                                    JSONArray resolutions = downloadUrls.optJSONArray(format);
-
-                                    if (resolutions != null) {
-                                        // Create a TextView for the format (Mp4/Mkv)
-                                        TextView formatTextView = new TextView(DownloadActivity.this);
-                                        formatTextView.setText(format.toUpperCase()); // Mp4 or Mkv
-                                        formatTextView.setTextSize(18);
-                                        formatTextView.setTypeface(null, Typeface.BOLD);
-                                        downloadContainer.addView(formatTextView);
-
-                                        for (int i = 0; i < resolutions.length(); i++) {
-                                            JSONObject resolutionObj = resolutions.optJSONObject(i);
-                                            if (resolutionObj != null) {
-                                                String resolution = resolutionObj.optString("resolution", "Unknown Resolution");
-                                                JSONArray urls = resolutionObj.optJSONArray("urls");
-
-                                                // Create a TextView for the resolution (e.g., 360p)
-                                                TextView qualityTextView = new TextView(DownloadActivity.this);
-                                                qualityTextView.setText("Quality: " + resolution);
-                                                qualityTextView.setPadding(0, 8, 0, 8);
-                                                downloadContainer.addView(qualityTextView);
-
-                                                if (urls != null) {
-                                                    for (int j = 0; j < urls.length(); j++) {
-                                                        JSONObject urlObj = urls.optJSONObject(j);
-                                                        if (urlObj != null) {
-                                                            String provider = urlObj.optString("provider", "Unknown Provider");
-                                                            String downloadUrl = urlObj.optString("url");
-
-                                                            // Create a Button for each provider
-                                                            Button providerButton = new Button(DownloadActivity.this);
-                                                            providerButton.setText(provider);
-                                                            providerButton.setOnClickListener(v -> {
-                                                                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl));
-                                                                startActivity(browserIntent);
-                                                            });
-
-                                                            // Add the button to the layout
-                                                            downloadContainer.addView(providerButton);
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
+                            // Set previous episode button state
+                            if (hasPrevious && previousEpisode != null) {
+                                String previousSlugValue = previousEpisode.optString("slug", null);
+                                if (previousSlugValue != null) {
+                                    previousEpisodeButton.setEnabled(true);
+                                    previousEpisodeButton.setBackgroundColor(getResources().getColor(R.color.enabled_button_color));
+                                    previousEpisodeButton.setTextColor(getResources().getColor(R.color.enabled_text_color));
+                                    previousEpisodeButton.setOnClickListener(v -> fetchEpisodeDetails(previousSlugValue));
                                 }
+                            } else {
+                                previousEpisodeButton.setEnabled(false);
+                                previousEpisodeButton.setBackgroundColor(getResources().getColor(R.color.disabled_button_color));
+                                previousEpisodeButton.setTextColor(getResources().getColor(R.color.disabled_text_color));
+                            }
+
+                            // Set next episode button state
+                            if (hasNext && nextSlug != null) {
+                                nextEpisodeButton.setEnabled(true);
+                                nextEpisodeButton.setBackgroundColor(getResources().getColor(R.color.enabled_button_color));
+                                nextEpisodeButton.setTextColor(getResources().getColor(R.color.enabled_text_color));
+                                nextEpisodeButton.setOnClickListener(v -> fetchEpisodeDetails(nextSlug));
+                            } else {
+                                nextEpisodeButton.setEnabled(false);
+                                nextEpisodeButton.setBackgroundColor(getResources().getColor(R.color.disabled_button_color));
+                                nextEpisodeButton.setTextColor(getResources().getColor(R.color.disabled_text_color));
+                            }
+
+                            // Populate download links
+                            try {
+                                JSONObject downloadUrls = dataObject.getJSONObject("download_urls");
+                                populateDownloadLinks(downloadUrls); // Populate download links
+                            } catch (JSONException e) {
+                                e.printStackTrace();
                             }
                         });
+
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
                 }
             }
-
-
-
-
-
-
-
-
         });
     }
 
-    private void addDownloadButtons(JSONObject data) throws JSONException {
-        Log.d("DownloadActivity", "Adding download buttons");
 
-        // Clear previous buttons
-        resolutionContainer.removeAllViews();
 
-        // Access download_urls from data
-        JSONObject downloadUrls = data.optJSONObject("download_urls");
-        if (downloadUrls != null) {
-            // Create a list for available buttons
-            JSONArray allFormats = new JSONArray();
+    private void populateDownloadLinks(JSONObject downloadUrls) {
+        resolutionContainer.removeAllViews(); // Clear previous views
 
-            // Check and add MP4 buttons
-            JSONArray mp4Array = downloadUrls.optJSONArray("mp4");
-            if (mp4Array != null && mp4Array.length() > 0) {
-                for (int i = 0; i < mp4Array.length(); i++) {
-                    allFormats.put(mp4Array.getJSONObject(i));
-                }
-            }
+        // Extract formats like mp4, mkv, etc.
+        JSONArray keys = downloadUrls.names();
+        if (keys != null) {
+            for (int k = 0; k < keys.length(); k++) {
+                String format = keys.optString(k);
+                JSONArray resolutions = downloadUrls.optJSONArray(format);
 
-            // Check and add MKV buttons
-            JSONArray mkvArray = downloadUrls.optJSONArray("mkv");
-            if (mkvArray != null && mkvArray.length() > 0) {
-                for (int i = 0; i < mkvArray.length(); i++) {
-                    allFormats.put(mkvArray.getJSONObject(i));
-                }
-            }
+                if (resolutions != null) {
+                    // Create a TextView for the format (Mp4/Mkv)
+                    TextView formatTextView = new TextView(this);
+                    formatTextView.setText(format.toUpperCase()); // Mp4 or Mkv
+                    formatTextView.setTextSize(18);
+                    formatTextView.setTypeface(null, Typeface.BOLD);
+                    resolutionContainer.addView(formatTextView);
 
-            // Shuffle the order of the formats to randomize display
-            for (int i = 0; i < allFormats.length(); i++) {
-                JSONObject resolutionObject = allFormats.optJSONObject(i);
-                if (resolutionObject != null) {
-                    String resolution = resolutionObject.optString("resolution", "Unknown");
-                    JSONArray urls = resolutionObject.optJSONArray("urls");
+                    for (int i = 0; i < resolutions.length(); i++) {
+                        JSONObject resolutionObj = resolutions.optJSONObject(i);
+                        if (resolutionObj != null) {
+                            String resolution = resolutionObj.optString("resolution", "Unknown Resolution");
+                            JSONArray urls = resolutionObj.optJSONArray("urls");
 
-                    Log.d("DownloadActivity", "Resolution: " + resolution);
+                            // Create a TextView for the resolution (e.g., 360p)
+                            TextView qualityTextView = new TextView(this);
+                            qualityTextView.setText("Quality: " + resolution);
+                            qualityTextView.setPadding(0, 8, 0, 8);
+                            resolutionContainer.addView(qualityTextView);
 
-                    // Create a button for this resolution
-                    Button resolutionButton = new Button(this);
-                    resolutionButton.setText(resolution);
-                    resolutionButton.setOnClickListener(v -> {
-                        Log.d("DownloadActivity", "Resolution button clicked for: " + resolution);
-                        if (urls != null && urls.length() > 0) {
-                            try {
-                                String providerUrl = urls.getJSONObject(0).optString("url", null);
-                                String providerName = urls.getJSONObject(0).optString("provider", "Unknown Provider");
+                            if (urls != null) {
+                                for (int j = 0; j < urls.length(); j++) {
+                                    JSONObject urlObj = urls.optJSONObject(j);
+                                    if (urlObj != null) {
+                                        String provider = urlObj.optString("provider", "Unknown Provider");
+                                        String rawUrl = urlObj.optString("url");
 
-                                // Create a button to display the provider
-                                Button providerButton = new Button(this);
-                                providerButton.setText("Provider: " + providerName);
-                                providerButton.setOnClickListener(v1 -> {
-                                    if (providerUrl != null) {
-                                        Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(providerUrl));
-                                        startActivity(browserIntent);
-                                    } else {
-                                        Toast.makeText(DownloadActivity.this, "No valid URL available for this resolution", Toast.LENGTH_SHORT).show();
+                                        // Create a Button for the download
+                                        Button providerButton = new Button(this);
+                                        providerButton.setText(provider);
+                                        providerButton.setOnClickListener(v -> {
+                                            // Open rawUrl directly in a browser
+                                            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(rawUrl));
+                                            startActivity(browserIntent);
+                                        });
+
+                                        resolutionContainer.addView(providerButton);
                                     }
-                                });
-
-                                // Add the provider button to the container
-                                resolutionContainer.addView(providerButton);
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                                Log.e("DownloadActivity", "Error fetching provider URL");
-                                Toast.makeText(DownloadActivity.this, "Error fetching provider URL", Toast.LENGTH_SHORT).show();
+                                }
                             }
-                        } else {
-                            Log.e("DownloadActivity", "No download URLs available for resolution: " + resolution);
-                            Toast.makeText(DownloadActivity.this, "No download URLs available", Toast.LENGTH_SHORT).show();
                         }
-                    });
-
-                    // Add the resolution button to the container
-                    resolutionContainer.addView(resolutionButton);
-                    Log.d("DownloadActivity", "Added button for resolution: " + resolution);
+                    }
                 }
             }
-        } else {
-            Log.e("DownloadActivity", "Download URLs JSON is null");
         }
     }
 
 
+    private void resolveUrl(String pdrainUrl, UrlResolvedCallback callback) {
+        OkHttpClient client = new OkHttpClient();
+        String resolveUrl = "http://maverick.caligo.asia:9044/v2/otakudesu/resolveUri?url=" + Uri.encode(pdrainUrl);
 
+        Request request = new Request.Builder().url(resolveUrl).build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e("DownloadActivity", "Failed to resolve URL: " + e.getMessage());
+                runOnUiThread(() -> callback.onError(e));
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    try {
+                        String responseBody = response.body().string();
+                        JSONObject jsonResponse = new JSONObject(responseBody);
+                        String resolvedUrl = jsonResponse.getString("data");
+                        runOnUiThread(() -> callback.onSuccess(resolvedUrl));  // Success: Pass resolved URL to callback
+                    } catch (JSONException e) {
+                        runOnUiThread(() -> callback.onError(e));  // Handle error in callback
+                    }
+                } else {
+                    runOnUiThread(() -> callback.onError(new IOException("Failed to resolve URL with response: " + response)));
+                }
+            }
+        });
+    }
+
+    private void openWithExternalDownloadManager(String downloadUrl) {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(Uri.parse(downloadUrl)); // Set the download URL
+
+        // Start the activity to open the URL in the browser
+        startActivity(intent);
+    }
+
+
+
+
+    // Callback interface for resolved URL
+    public interface UrlResolvedCallback {
+        void onSuccess(String resolvedUrl);
+        void onError(Exception e);
+    }
 }
